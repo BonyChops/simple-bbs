@@ -1,0 +1,22 @@
+<div class="login-box fade-in">
+
+    <form action="/session" method="POST">
+        <div style="margin-bottom: 50px;margin-top: 30px;">
+        <img src="https://github.com/bonychops.png" width="100px">
+        <% if @incorrectFlag === "true" then %><p style="color: red;">ユーザー名，またはパスワードが違います</p><% end %>
+        </div>
+        <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+            ユーザー名:
+            <div style="width: 100%;">
+                <input type="text" class="input-box">
+            </div>
+        </div>
+        <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+            パスワード:
+            <div style="width: 100%;">
+                <input type="password" class="input-box">
+            </div>
+        </div>
+        <input class="submit-box" type="submit" value="ログイン">
+    </form>
+</div>

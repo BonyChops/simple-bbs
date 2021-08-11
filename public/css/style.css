@@ -1,0 +1,58 @@
+body{
+    background-color: #121212;
+    color: white;
+}
+
+div.login-box{
+    background-color: #1F1F1F;
+    width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-bottom: 50px;
+    border: 2px solid #565656;
+    border-radius: 25px;
+    margin-top: 100px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    display: block;
+}
+
+input.input-box{
+    border: 2px solid #565656;
+    border-radius: 10px;
+    background-color: #121212;
+    height: 40px;
+    font-size: 20px;
+    width: 100%;
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    box-sizing: border-box;
+    color: white;
+    outline: none;
+}
+
+input.submit-box{
+    border: 2px solid #565656;
+    border-radius: 10px;
+    background-color: rgb(46, 164, 79);
+    height: 40px;
+    box-sizing: border-box;
+    color: white;
+    outline: none;
+}
+
+.fade-in-active{
+    opacity: 1;
+    transition: opacity 300ms , transform 300ms;
+    transform: scale(1.0);
+}
+
+
+div.fade-in{
+    opacity: 0;
+    transition: opacity 300ms , transform 300ms;
+    transform: scale(1.2);
+}
