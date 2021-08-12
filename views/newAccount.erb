@@ -1,24 +1,25 @@
 <div class="logo-box dropdown">
     <div style="margin: auto;">
-    <a href="/">
         <img src="/images/icon.png" height="50px">
         <img src="/images/logo.png" height="50px">
-    </a>
     </div>
 </div>
 <div class="fade-in">
     <div class="login-box">
-        <form method="POST">
+        <form action="" method="POST">
             <div style="margin-bottom: 50px;">
-                <img src="/images/icon.png" width="100px">
-                <% if @incorrectFlag==="true" then %>
-                    <p style="color: red;">ユーザー名，またはパスワードが違います</p>
+                <h2>🎉アカウント作成</h2>
+                <% if @incorrectPassword==="true" then %>
+                    <p style="color: red;">パスワードを確認してください</p>
+                <% end %>
+                <% if params[:account_exists]==="true" then %>
+                    <p style="color: red;">このアカウントはすでに存在しています</p>
                 <% end %>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
-                ユーザー名またはメールアドレス:
+                メールアドレス:
                 <div style="width: 100%;">
-                    <input type="text" name="email" class="input-box">
+                    <input type="email" name="email" class="input-box">
                 </div>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
@@ -27,15 +28,21 @@
                     <input type="password" name="password" class="input-box">
                 </div>
             </div>
-            <input class="submit-box" type="submit" value="ログイン">
+            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+                パスワードを確認:
+                <div style="width: 100%;">
+                    <input type="password" name="password_confirm" class="input-box">
+                </div>
+            </div>
+            <input class="submit-box" type="submit" value="アカウント作成">
         </form>
     </div>
     <div class="login-box">
-        <p class="">または<a href="/account/new">アカウントを作成</a></p>
+        <p class="">または<a href="/login">ログイン</a></p>
     </div>
     <div class="login-box">
         <form action="/session" method="POST">
-            <h3>ソーシャルログイン</h3>
+            <h3>ソーシャルアカウントで作成</h3>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 ユーザー名:
                 <div style="width: 100%;">
@@ -51,4 +58,5 @@
             <input class="submit-box" type="submit" value="ログイン">
         </form>
     </div>
+
 </div>

@@ -1,6 +1,24 @@
 body{
     background-color: #121212;
     color: white;
+    font-family: sans-serif;
+    overflow-x: hidden;
+}
+
+div.container{
+    max-width: 700px;
+    display:flex;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.logo-box{
+    display:flex;
+    margin-left: auto;
+    margin-right: auto;
+    width: 500px;
+    height: 100px;
+    text-align: center;
 }
 
 div.login-box{
@@ -8,21 +26,23 @@ div.login-box{
     width: 400px;
     margin-left: auto;
     margin-right: auto;
-    padding-bottom: 50px;
-    border: 2px solid #565656;
-    border-radius: 25px;
-    margin-top: 100px;
     left: 0;
     right: 0;
+    padding-top: 30px;
+    padding-bottom: 30px;
+    padding-left: 30px;
+    padding-right: 30px;
+    border: 2px solid #565656;
+    border-radius: 25px;
+    margin-bottom: 50px;
     text-align: center;
     display: block;
 }
 
-input.input-box{
+.input-box{
     border: 2px solid #565656;
     border-radius: 10px;
     background-color: #121212;
-    height: 40px;
     font-size: 20px;
     width: 100%;
     padding-left: 10px;
@@ -34,6 +54,17 @@ input.input-box{
     outline: none;
 }
 
+input.input-box{
+    height: 40px;
+}
+
+
+textarea.input-box{
+    height: 100px;
+}
+
+
+
 input.submit-box{
     border: 2px solid #565656;
     border-radius: 10px;
@@ -41,13 +72,15 @@ input.submit-box{
     height: 40px;
     box-sizing: border-box;
     color: white;
-    outline: none;
+    /* outline: none; */
+    cursor: pointer;
 }
 
 .fade-in-active{
     opacity: 1;
     transition: opacity 300ms , transform 300ms;
     transform: scale(1.0);
+    overflow: hidden;
 }
 
 
@@ -55,4 +88,18 @@ div.fade-in{
     opacity: 0;
     transition: opacity 300ms , transform 300ms;
     transform: scale(1.2);
+    overflow: hidden;
+}
+
+.dropdown{
+    transition: transform 300ms;
+    transform: translateY(-100%);
+    overflow: hidden;
+}
+
+
+.dropdown-active{
+    transition: transform 300ms;
+    transform: translateY(0);
+    overflow: hidden;
 }
