@@ -12,3 +12,5 @@ gem 'sinatra-reloader'
 gem "webrick"
 gem "sinatra-contrib"
 gem "addressable"
+gem "rqrcode", "~> 2.0"
+gem "base32"

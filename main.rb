@@ -7,16 +7,9 @@ require "./oauth/line"
 require "./oauth/twitter"
 require "./oauth/discord"
 require "./oauth/github"
+require "./oauth/google"
+require "rqrcode"
 
-if(File.exist?('credential/general.yml')) then
-    credential = YAML.load_file("credential/general.yml")
-    $redirect_uri = credential["redirect_uri"]
-end
-
-if(File.exist?('credential/line.yml')) then
-    @credential = YAML.load_file("credential/line.yml")
-    $l = Line.new(@credential["client_id"], @credential["secret"],  $redirect_uri)
-end
 
 use Rack::MethodOverride
 
@@ -51,6 +44,36 @@ end
 
 set :sessions,
     secret: "xxx"
+
+if(File.exist?('credential/general.yml')) then
+    credential = YAML.load_file("credential/general.yml")
+    $redirect_uri = credential["redirect_uri"]
+end
+
+if(File.exist?('credential/line.yml')) then
+    @credential = YAML.load_file("credential/line.yml")
+    $l = Line.new(@credential["client_id"], @credential["secret"],  $redirect_uri)
+end
+
+if(File.exist?('credential/twitter.yml')) then
+    @credential = YAML.load_file("credential/twitter.yml")
+    $t = Twitter.new(@credential["client_id"], @credential["secret"], @credential["access_token"], @credential["access_token_secret"], $redirect_uri)
+end
+
+if(File.exist?('credential/discord.yml')) then
+    @credential = YAML.load_file("credential/discord.yml")
+    $d = Discord.new(@credential["client_id"], @credential["secret"], $redirect_uri)
+end
+
+if(File.exist?('credential/google.json')) then
+    @credential = JSON.parse(File.read('credential/google.json'))
+    $go = Google.new(@credential["web"]["client_id"], @credential["web"]["client_secret"], $redirect_uri)
+end
+
+@credential = JSON.parse(File.read('credential/googleMailer.json'))
+$goMailer = Google.new(@credential["installed"]["client_id"], @credential["installed"]["client_secret"], @credential["installed"]["redirect_uris"][0], true)
+@credential = JSON.parse(File.read('credential/googleMailerToken.json'))
+$goMailerCredential = GoogleCredential.new(@credential, $goMailer)
 
 get "/" do
     @userInfo = SessionManager.login(session)
@@ -102,9 +125,7 @@ end
 
 get "/account/new" do
     @userInfo = SessionManager.login(session)
-    if @userInfo != nil
-        redirect "/?loged_in=true"
-    end
+    redirect "/?loged_in=true" if @userInfo != nil
     @incorrectPassword = params[:check_password]
     erb :newAccount
 end
@@ -131,6 +152,7 @@ post "/account/new" do
     tmpUser = SessionManager.newTmpUser
     SessionManager.addEmailCredential(params[:email], params[:password], tmpUser.id)
     puts tmpUser.id
+    $goMailer.sendGmail($goMailerCredential, params[:email], "Kicha: さあ，はじめましょう", "アカウント作成ありがとうございます！\n下記のリンクをクリックし，アカウント作成を完了させましょう\n\nhttp://localhost:4949/account/new/#{tmpUser.id}\n\n※このメールに心当たりない場合は，お手数ですがこのメールを削除してくださいますようお願いいたします．")
     redirect "/account/new/email-sent"
 end
 
@@ -188,4 +210,103 @@ get "/line/callback" do
     @result = $l.get_accesstoken(params[:code])
     @userInfo = $l.get_user_info(@result["id_token"])
     redirect SessionManager.socialLoginRedirectTo(session, "line", @userInfo["sub"], @userInfo["name"], @userInfo["picture"], request.ip, request.env['HTTP_USER_AGENT'] )
+end
+
+get "/line/login" do
+    redirect $l.generate_authorize_uri
+end
+
+get "/line/callback" do
+    puts params[:code]
+    @result = $l.get_accesstoken(params[:code])
+    @userInfo = $l.get_user_info(@result["id_token"])
+    redirect SessionManager.socialLoginRedirectTo(session, "line", @userInfo["sub"], @userInfo["name"], @userInfo["picture"], request.ip, request.env['HTTP_USER_AGENT'] )
+end
+
+get "/twitter/login" do
+    redirect $t.generate_authorize_uri
+end
+
+get "/twitter/callback" do
+    @result = $t.get_accesstoken(params[:oauth_token], params[:oauth_verifier])
+    @userInfo = $t.get_verify_credentials(@result["oauth_token"], @result["oauth_token_secret"])
+    if @userInfo != false
+        redirect SessionManager.socialLoginRedirectTo(session, "twitter", @userInfo["id_str"], @userInfo["name"],@userInfo["profile_image_url_https"].gsub(/_normal/, ''), request.ip, request.env['HTTP_USER_AGENT'])
+    else
+        redirect "/?error"
+    end
+end
+
+get "/discord/login" do
+    redirect $d.generate_authorize_uri
+end
+
+
+get "/discord/callback" do
+    @result = $d.get_accesstoken(params[:code])
+    @clientData = $d.get_user_info(@result["access_token"])
+
+    if @clientData != false then
+        @userInfo = @clientData["user"]
+        redirect SessionManager.socialLoginRedirectTo(session, "discord", @userInfo["id"], @userInfo["username"], $d.get_avatar_uri(@userInfo["id"], @userInfo["avatar"]), request.ip, request.env['HTTP_USER_AGENT'])
+    else
+        redirect "/"
+    end
+end
+
+get "/google/login" do
+    puts $go.generate_authorize_uri
+    redirect $go.generate_authorize_uri
+end
+
+get "/google/callback" do
+    puts params[:code]
+    $go.generate_authorize_uri(["https://mail.google.com/", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.compose", "https://www.googleapis.com/auth/gmail.send"])
+    @result = $go.get_accesstoken(params[:code])
+    puts @result
+    @userInfo = $go.get_user_info(@result["access_token"])
+    pp @userInfo
+    if @userInfo != false
+        redirect SessionManager.socialLoginRedirectTo(session, "google", @userInfo["id"], @userInfo["name"], @userInfo["picture"], request.ip, request.env['HTTP_USER_AGENT'])
+    else
+        redirect "/"
+    end
+end
+
+get '/settings/2fa' do
+    @userInfo = SessionManager.login(session)
+    redirect "/login" if @userInfo == nil
+    c = Credential.find_by(type: "2fa", user_id: @userInfo.id)
+    if c != nil
+        token = c.token
+    else
+        secret_key = "AOHT4WFMAL"
+        tfa = TwoFactorAuth.new(secret_key)
+        token = tfa.TOTP
+        puts "aa"
+        puts token
+    end
+    service_name = "Kicha"
+    qr = RQRCode::QRCode.new("otpauth://totp/#{service_name}:contact.bonychops@gmail.com?secret=#{secret_key}&issuer=#{service_name}")
+    @svg = qr.as_svg(
+        color: "000",
+        shape_rendering: "crispEdges",
+        module_size: 6,
+        use_path: true
+    )
+    erb :start2fa
+end
+
+post "/settings/2fa" do
+    secret_key = "AOHT4WFMAL" #[*'A'..'Z', *'a'..'z', *0..9].shuffle[0..9].join
+    tfa = TwoFactorAuth.new(secret_key)
+    token = tfa.TOTP
+    puts"confirm----------------"
+    puts token.to_s
+    puts params[:confirm_num]
+    if(token.to_s == params[:confirm_num])
+        redirect "/settings/2fa?success=true"
+    else
+        redirect "/settings/2fa?failed=true"
+    end
 end

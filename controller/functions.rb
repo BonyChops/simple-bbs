@@ -1,3 +1,6 @@
+require "base32"
+require "./oauth/http"
+
 class SessionManager
     def self.login(session)
         token = session[:token]
@@ -94,9 +97,13 @@ class SessionManager
     end
 
     def self.socialLogin(type, uid, display_name = nil, icon_uri = nil, ip = nil, useragent = nil)
-        c = Credential.find_by(type: type, uid: uid)
+        c = Credential.all.find_by(type: type, uid: uid, tmp_user_id: nil)
         if c == nil
             # アカウント作成
+            cs = Credential.where(type: type, uid: uid, user_id: nil)
+            cs.each do |c|
+                c.destroy
+            end
             tmpUser = self.newTmpUser
             self.newSocialCredential(type, uid, display_name, icon_uri, nil, tmpUser.id)
             return {status: "account_creation", tmpUser: tmpUser}
@@ -110,11 +117,61 @@ class SessionManager
     def self.socialLoginRedirectTo(session, type, uid, display_name = nil, icon_uri = nil, ip = nil, useragent = nil)
         result = self.socialLogin(type, uid, display_name, icon_uri, ip, useragent)
         case result[:status]
-            when "account_creation"
-                return "/account/new/" + result[:tmpUser].id
-            when "logged_in"
-                session[:token] = result[:token]
-                return "/"
-            end
+        when "account_creation"
+            return "/account/new/" + result[:tmpUser].id + "?suggest_name=" + NetHttp.escape(display_name)
+        when "logged_in"
+            session[:token] = result[:token]
+            return "/"
+        end
+    end
+end
+
+class TwoFactorAuth
+    def initialize(secret_key)
+        @secret_key = secret_key
+    end
+
+    def generate_hs(key, counter)
+        puts "key: #{key}"
+        puts "counter: #{counter}"
+        b = []
+        while counter > 0 do
+            # puts "b: #{(counter & 0xff)}"
+            b.push((counter & 0xff).chr)
+            counter >>= 8
+        end
+        puts "b----"
+        puts b
+        puts "-----"
+        text = b.reverse.join("").rjust(8, "\0")
+        puts "text: #{text}"
+
+        return OpenSSL::HMAC.digest(OpenSSL::Digest::SHA1.new, Base32.decode(key), text).bytes
+    end
+
+    def dynamic_truncate(key, counter, digit = 6)
+        hs = generate_hs(key, counter)
+        puts "hs: #{hs}"
+        puts "hs19: #{hs[19]}"
+        offset = (hs[19] & 0xF)
+        puts "offset: #{offset}"
+        p = ((hs[offset] & 0x7f) << 24) | ((hs[offset + 1] & 0xff) << 16) | ((hs[offset + 2] & 0xff) << 8) | ((hs[offset + 3] & 0xff))
+        p2 =( ((hs[offset]) << 24) | ((hs[offset + 1]) << 16) | ((hs[offset + 2]) << 8) | ((hs[offset + 3]))) & 0x7FFFFFFF
+        puts "p: #{p}"
+        puts "p: #{p2}"
+        return p
+    end
+
+    def HOTP(key, counter, digit = 6)
+        sNum = dynamic_truncate(key, counter, digit)
+        otp = sNum % (10 ** 6)
+        return sprintf("%06d", otp)
+    end
+
+    def TOTP(time = Time.now, digit = 6)
+        counter = (time.to_i / 30).floor
+        puts @secret_key
+        puts counter
+        return HOTP(@secret_key, counter)
     end
 end

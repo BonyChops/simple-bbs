@@ -21,7 +21,7 @@
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 表示名:
                 <div style="width: 100%;">
-                    <input type="text" name="display_name" class="input-box" maxlength="20">
+                    <input type="text" name="display_name" class="input-box" maxlength="20" value="<%= params[:suggest_name] == nil ? "" : params[:suggest_name] %>">
                 </div>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">

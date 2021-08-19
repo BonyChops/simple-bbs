@@ -2,6 +2,7 @@ require 'uri'
 require 'net/http'
 require 'cgi'
 require "addressable/uri"
+require "json"
 
 class NetHttp
     def self.get(uri_string, data_object, headers = {})
@@ -15,10 +16,10 @@ class NetHttp
         return response
     end
 
-    def self.post(uri_string, post_data_object, headers = {})
+    def self.post(uri_string, post_data_object, headers = {}, jsonMode = false)
         uri = URI.parse(uri_string)
         req = Net::HTTP::Post.new(uri, headers)
-        post_data = self.objectToString(post_data_object);
+        post_data = jsonMode ? post_data_object.to_json : self.objectToString(post_data_object);
         req.body = post_data
 
         req_options = {
@@ -31,7 +32,7 @@ class NetHttp
     end
 
     def self.objectToString(object, separator = "&")
-        return object.map{|key, value| "#{ERB::Util.url_encode(key)}=#{ERB::Util.url_encode(value)}"}.join(separator)
+        return object.map{|key, value| "#{self.escape(key)}=#{self.escape(value)}"}.join(separator)
     end
 
     def self.escape(value)
