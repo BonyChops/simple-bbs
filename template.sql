@@ -18,6 +18,7 @@ CREATE TABLE posts (
  user_id CHAR(10) NOT NULL,
  posted_at TIMESTAMP(10) NOT NULL,
  content VARCHAR(5096) NOT NULL,
+ reply_to INT,
 
  FOREIGN KEY (user_id) REFERENCES users (id)
 );
@@ -41,6 +42,7 @@ CREATE TABLE credentials (
  token VARCHAR(512),
  salt CHAR(20),
  icon_uri VARCHAR(1024),
+ expired_at TIMESTAMP(10),
 
  FOREIGN KEY (user_id) REFERENCES users (id),
  FOREIGN KEY (tmp_user_id) REFERENCES tmp_users (id)

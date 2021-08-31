@@ -19,6 +19,12 @@ div.tweet-header{
     margin-bottom: 20px;
 }
 
+div.tweet-header-top{
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+
 div.tweet-box{
     display: block;
     border: 1px solid #565656;
@@ -53,6 +59,12 @@ div.tweet-icon{
 div.tweet-footer{
     display:flex;
     justify-content: space-evenly;
+}
+
+div.tweet-author{
+    display: flex;
+    min-height: 30px;
+    width: 100%;
 }
 
 div.tweet-button{

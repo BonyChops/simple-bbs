@@ -75,9 +75,29 @@ $goMailer = Google.new(@credential["installed"]["client_id"], @credential["insta
 @credential = JSON.parse(File.read('credential/googleMailerToken.json'))
 $goMailerCredential = GoogleCredential.new(@credential, $goMailer)
 
+post "/api/post/:id/like/toggle" do
+    @userInfo = SessionManager.login(session)
+    l = Heart.find_by(user_id: @userInfo.id)
+    if l == nil
+        l = Heart.new
+        l.user_id = @userInfo.id
+        l.post_id = params[:id]
+        l.id = [*'A'..'Z', *'a'..'z', *0..9].shuffle[0..9].join
+        l.created_at = Time.now
+        l.save
+        pressed = true
+    else
+        l.destroy
+        pressed = false
+    end
+
+    obj = {status: "success", pressed: pressed}
+    erb obj.to_json, :layout => false
+end
+
 get "/" do
     @userInfo = SessionManager.login(session)
-    @posts = Post.all.order(posted_at: "desc")
+    @posts = Post.where(reply_to: nil).order(posted_at: "desc")
     puts @userInfo
     puts @userInfo == nil
     erb :index
@@ -97,9 +117,24 @@ post "/post/new" do
     p.user_id = @userInfo.id
     p.posted_at = Time.now
     p.content = params[:content]
+    p.reply_to = params[:reply_to] if params[:reply_to] != nil
     p.save
-    redirect "/?posted=true"
+    if params[:reply_to] == nil
+        redirect "/?posted=true"
+    else
+        redirect "/post/#{params[:reply_to]}?posted=true"
+    end
 end
+
+get "/post/:id" do
+    @targetPost = Post.find_by(id: params[:id])
+    @userInfo = SessionManager.login(session)
+    @posts = Post.where(reply_to: params[:id])
+    puts @userInfo
+    puts @userInfo == nil
+    erb :index
+end
+
 
 get "/login" do
     @userInfo = SessionManager.login(session)

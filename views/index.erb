@@ -18,8 +18,64 @@
         </div>
     </div>
     <div class="tweet-row">
+        <%
+        if @targetPost != nil
+            user = User.find(@targetPost.user_id)
+        %>
+        <div class="tweet-box">
+            <div class="tweet-container" style="margin-bottom: 5px;">
+                <div class="tweet-author">
+                    <div class="tweet-icon">
+                        <img class="tweet-icon" src="https://github.com/BonyChops.png" width="100%">
+                    </div>
+                     <div class="tweet-header-top">
+                        <a href="https://github.com/BonyChops" style="color: white;">
+                            <%= user.display_name %>
+                        </a><br>
+                        <span style="color: gray; margin-top: 10px;">@<%= user.display_id %></span>
+                    </div>
+                </div>
+            </div>
+            <div class="tweet-main" style="margin-bottom: 10px;">
+                <div class="tweet-context" style="font-size: 24px;"><%= @targetPost.content %></div>
+            </div>
+            <div class="tweet-footer">
+                <div class="tweet-button noselect" onClick="toggleLike(<%=@targetPost.id%>)">
+                    <i class="material-icons">favorite_border</i>
+                </div>
+                <div class="tweet-button">
+                    <i class="material-icons">share</i>
+                </div>
+            </div>
+        </div>
+        <div class="tweet-box">
+        <form method="POST" action="/post/new">
+            <input type="hidden" name="reply_to" value="<%= @targetPost.id %>">
+            <div class="tweet-container">
+                <div class="tweet-icon">
+                    <img class="tweet-icon" src="https://github.com/BonyChops.png" width="100%">
+                </div>
+                <div class="tweet-main">
+                    <div class="tweet-header">
+                        <a href="https://github.com/BonyChops" style="color: white;">
+                        Bony_Chops
+                        </a>
+                        <span style="color: gray; margin-left: 5px;">@Bony_Chops</span>
+                    </div>
+                    <textarea name="content" placeholder="返信を追加する..." class="tweet-input" style="background: transparent; min-height: 50px"></textarea>
+                </div>
+            </div>
+            <div style="margin-left: auto; right: 0%; text-align: right;">
+                <button type="submit">
+                    <i class="material-icons">send</i>
+                </button>
+            </div>
+        </form>
+        </div>
+        <% end %>
     　  <% @posts.each do |post|
         user = User.find(post.user_id)
+        replyNum = Post.where(reply_to: post.id).length
         %>
         <div class="tweet-box">
             <div class="tweet-container">
@@ -32,16 +88,15 @@
                         <%= user.display_name %>
                         </a>
                         <span style="color: gray; margin-left: 5px;">@<%= user.display_id %></span>
-
                     </div>
                     <div class="tweet-context"><%= post.content %></div>
                 </div>
             </div>
             <div class="tweet-footer">
                 <div class="tweet-button">
-                    <i class="material-icons">chat_bubble_outline</i>
+                    <a href="/post/<%= post.id %>" style="text-decoration: none; color: white;"><i class="material-icons">chat_bubble_outline</i> <%= if replyNum > 0 then replyNum else "" end %></a>
                 </div>
-                <div class="tweet-button">
+                <div class="tweet-button noselect">
                     <i class="material-icons">favorite_border</i>
                 </div>
                 <div class="tweet-button">
