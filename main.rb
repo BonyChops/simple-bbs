@@ -294,6 +294,10 @@ get "/google/login" do
     redirect $go.generate_authorize_uri
 end
 
+get "/google/login/warn" do
+    erb :googleLoginWarning
+end
+
 get "/google/callback" do
     puts params[:code]
     $go.generate_authorize_uri(["https://mail.google.com/", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/gmail.compose", "https://www.googleapis.com/auth/gmail.send"])

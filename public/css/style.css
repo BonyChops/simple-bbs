@@ -39,6 +39,30 @@ div.login-box{
     display: block;
 }
 
+div.social-box{
+    display: flex;
+    width: 300px;
+    height: 48px;
+    background-color: #1F1F1F;
+    border: 2px solid #565656;
+    border-radius: 5px;
+    left:  0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    color: white;
+    margin-bottom: 10px;
+}
+
+div.social-box:hover{
+    background-color: #454545;
+}
+
+div.social-icon{
+    width: 48px;
+    margin-right: 10px;
+}
+
 .input-box{
     border: 2px solid #565656;
     border-radius: 10px;
@@ -123,4 +147,4 @@ div.fade-in{
           -ms-user-select: none; /* Internet Explorer/Edge */
               user-select: none; /* Non-prefixed version, currently
                                     supported by Chrome, Edge, Opera and Firefox */
-  }
+}

@@ -34,21 +34,26 @@
         <p class="">または<a href="/account/new">アカウントを作成</a></p>
     </div>
     <div class="login-box">
-        <form action="/session" method="POST">
-            <h3>ソーシャルログイン</h3>
-            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
-                ユーザー名:
-                <div style="width: 100%;">
-                    <input type="text" class="input-box">
-                </div>
-            </div>
-            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
-                パスワード:
-                <div style="width: 100%;">
-                    <input type="password" class="input-box">
-                </div>
-            </div>
-            <input class="submit-box" type="submit" value="ログイン">
-        </form>
+        <h3>ソーシャルログイン</h3>
+        <a href="/google/login/warn"><div class="social-box">
+            <div class="social-icon"><img src="/images/oauth/google.svg" width="48px"></div>
+            <span style="margin-top: auto; margin-bottom: auto;" class="noselect">Googleでログイン</span>
+        </div></a>
+        <a href="/twitter/login"><div class="social-box noselect">
+            <div class="social-icon"><img src="/images/oauth/twitter.png" width="48px"></div>
+            <span style="margin-top: auto; margin-bottom: auto;" class="noselect">Twitterでログイン</span>
+        </div></a>
+        <a href="/line/login"><div class="social-box noselect">
+            <div class="social-icon"><img src="/images/oauth/line.png" width="48px"></div>
+            <span style="margin-top: auto; margin-bottom: auto;" class="noselect">LINEでログイン</span>
+        </div></a>
+        <a href="/github/login"><div class="social-box noselect">
+            <div class="social-icon"><img src="/images/oauth/github.png" width="48px"></div>
+            <span style="margin-top: auto; margin-bottom: auto;" class="noselect">GitHubでログイン</span>
+        </div></a>
+        <a href="/discord/login"><div class="social-box noselect">
+            <div class="social-icon"><img src="/images/oauth/discord.svg" width="48px"></div>
+            <span style="margin-top: auto; margin-bottom: auto;" class="noselect">Discordでログイン</span>
+        </div></a>
     </div>
 </div>
