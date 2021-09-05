@@ -6,47 +6,62 @@
 </div>
 <div class="fade-in">
     <div class="login-box">
-        <form action="" method="POST">
-            <div style="margin-bottom: 50px;">
-                <h2>🎉アカウント作成</h2>
+        <div style="margin-bottom: 50px;">
+            <h2>アカウント設定</h2>
             <% if params[:status_too_long] === "true" then %><p style="color: red;">自己紹介が長すぎます</p><% end %>
             <% if params[:invalid_display_id] === "true" then %><p style="color: red;">無効なIDです</p><% end %>
             <% if params[:id_already_exists] === "true" then %><p style="color: red;">そのIDはすでに存在しています</p><% end %>
             <% if params[:display_name_too_long] === "true" then %><p style="color: red;">表示名が長すぎます</p><% end %>
             <% if params[:icon_missmatch] === "true" then %><p style="color: red;">アイコンのURIが一致しません(変なリクエストはやめましょう)</p><% end %>
             <% if params[:saved] === "true" then %><p style="color: green;">変更を反映しました</p><% end %>
-            </div>
+         </div>
+         <div style="width: 300px; text-align: left; margin-left: auto; margin-right: auto;">
+            <p><a href="/">&lt; 戻る</a></p>
+        </div>
+        <form action="/account" method="POST">
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 ユーザID(20字まで):
                 <div style="width: 100%;">
-                    <input type="text" name="display_id" class="input-box" maxlength="20">
+                    <input type="text" name="display_id" class="input-box" maxlength="18" value="<%= @user_info.display_id %>">
                 </div>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 表示名:
                 <div style="width: 100%;">
-                    <input type="text" name="display_name" class="input-box" maxlength="20" value="<%= params[:suggest_name] == nil ? "" : params[:suggest_name] %>">
+                    <input type="text" name="display_name" class="input-box" value="<%= @user_info.display_name %>" maxlength="20" value="<%= params[:suggest_name] == nil ? "" : params[:suggest_name] %>">
                 </div>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 自己紹介文:
                 <div style="width: 100%;">
-                    <textarea type="text" name="status" class="input-box" maxlength="512"></textarea>
+                    <textarea type="text" name="status" class="input-box" maxlength="512"><%= @user_info.status %></textarea>
                 </div>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 アイコン:
                 <div style="width: 100%;">
-                    <input type="radio" name="icon_uri" value="/images/icon.png" checked> <img class="tweet-icon" width="40px" src="/images/icon.png">
+                    <input type="radio" name="icon_uri" value="/images/icon.png" <%= "checked" if @user_info.icon_uri == "/images/icon.png"%> > <img class="tweet-icon" width="40px" src="/images/icon.png">
                     <%
-                    icon_credentials = Credential.where(tmp_user_id: @tmpuser.id).where.not(icon_uri: nil)
+                    icon_credentials = Credential.where(user_id: @user_info.id).where.not(icon_uri: nil)
                     unless icon_credentials.nil? then icon_credentials.each{|credential|
                     %>
-                    <input type="radio" name="icon_uri" value="<%= credential.icon_uri %>"> <img class="tweet-icon" width="40px" src="<%= credential.icon_uri %>">
+                    <input type="radio" name="icon_uri" value="<%= credential.icon_uri %>" <%= "checked" if @user_info.icon_uri == credential.icon_uri%> > <img class="tweet-icon" width="40px" src="<%= credential.icon_uri %>">
                     <%} end%>
                 </div>
             </div>
-            <input class="submit-box" type="submit" value="アカウント作成">
+            <input class="submit-box" style="padding-left: 25px; padding-right: 25px;" type="submit" value="更新">
+            <input name="_method" type="hidden" value="put">
         </form>
+        <div style="margin-bottom: 50px; margin-top: 50px;">
+            <h3>二段階認証</h3>
+            <a href="/settings/2fa"><div class="social-box noselect">
+           <span style="margin-top: auto; margin-bottom: auto;" class="noselect">二段階認証を設定</span>
+        </div></a>
+        <div style="margin-top: 50px">
+            <form action="/logout" method="GET">
+                <input class="submit-box" style="background: red;" type="submit" value="ログアウト">
+            </form>
+        </div>
+        </div>
     </div>
 </div>
