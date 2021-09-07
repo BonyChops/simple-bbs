@@ -13,7 +13,10 @@
                     <p style="color: green;">確認しました</p>
                 <% end %>
                 <% if params[:failed] === "true" then %>
-                    <p style="color: red;">確認できませんでした</p>
+                    <p style="color: red;">確認できませんでした．秘密鍵をリセットしたので，再度読み取って下さい．</p>
+                <% end %>
+                <% if params[:deleted] === "true" then %>
+                    <p style="color: green;">今までの設定は無効化されました．</p>
                 <% end %>
             </div>
             <div class="twofa-box">
@@ -22,6 +25,7 @@
             <ul style="text-align: left;">
                 <li>上記のQRコードを認証アプリで読み取ってください(Authy, Google Authenticatorなど)</li>
                 <li>表示される6桁のコードを以下に入力して確認します</li>
+                <li>このページを読み込み直すたびに，秘密鍵を生成し直します(QRコードも変わります)</li>
             </ul>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
                 コード:
@@ -30,6 +34,7 @@
                 </div>
             </div>
 
+            <input type="hidden" name="sec_key" value="<%= @secret_key %>">
             <input class="submit-box" type="submit" value="コードを確認">
         </form>
     </div>

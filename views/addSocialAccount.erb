@@ -8,6 +8,39 @@
 </div>
 <div class="fade-in">
     <div class="login-box">
+        <form action="/account/new" method="POST">
+            <div style="margin-bottom: 50px;">
+                <h2>メールアドレスを追加</h2>
+                <% if @incorrectPassword==="true" then %>
+                    <p style="color: red;">パスワードを確認してください</p>
+                <% end %>
+                <% if params[:account_exists]==="true" then %>
+                    <p style="color: red;">このメールアドレスはすでに存在しています</p>
+                <% end %>
+            </div>
+            <p>メールアドレスごとにパスワードを設定できるので，今までと違うパスワードも設定することができます．</p>
+            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+                メールアドレス:
+                <div style="width: 100%;">
+                    <input type="email" name="email" class="input-box">
+                </div>
+            </div>
+            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+                パスワード:
+                <div style="width: 100%;">
+                    <input type="password" name="password" class="input-box">
+                </div>
+            </div>
+            <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">
+                パスワードを確認:
+                <div style="width: 100%;">
+                    <input type="password" name="password_confirm" class="input-box">
+                </div>
+            </div>
+            <input class="submit-box" type="submit" value="メールアドレスの追加">
+        </form>
+    </div>
+    <div class="login-box">
         <h3>ソーシャルアカウントを追加</h3>
         <a href="/google/login/warn"><div class="social-box">
             <div class="social-icon"><img src="/images/oauth/google.svg" width="48px"></div>

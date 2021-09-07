@@ -1,0 +1,24 @@
+<div class="logo-box dropdown">
+    <div style="margin: auto;">
+        <img src="/images/icon.png" height="50px">
+        <img src="/images/logo.png" height="50px">
+    </div>
+</div>
+<div class="fade-in">
+    <div class="login-box">
+        <form action="/settings/2fa" method="POST">
+            <div style="margin-bottom: 50px;">
+                <h2>二段階認証の変更/無効化</h2>
+            </div>
+            <ul style="text-align: left;">
+                <li>二段階認証の再度設定するには，一度設定を無効化する必要があります</li>
+                <li>無効化すると，今まで設定していたものは使用できなくなります</li>
+            </ul>
+            <p>設定を無効化しますか？</p>
+
+            <input type="hidden" name="_method" value="delete">
+            <input class="submit-box" type="submit" style="background-color: red;" value="無効化する">
+        </form>
+    </div>
+
+</div>

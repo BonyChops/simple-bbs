@@ -49,6 +49,7 @@ GEM
     tilt (2.0.10)
     tzinfo (2.0.4)
       concurrent-ruby (~> 1.0)
+    user_agent_parser (2.7.0)
     webrick (1.7.0)
     zeitwerk (2.4.2)
 
@@ -65,6 +66,7 @@ DEPENDENCIES
   sinatra-contrib
   sinatra-reloader
   sqlite3
+  user_agent_parser
   webrick
 
 BUNDLED WITH

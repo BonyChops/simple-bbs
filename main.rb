@@ -11,6 +11,8 @@ require './oauth/discord'
 require './oauth/github'
 require './oauth/google'
 require 'rqrcode'
+require 'base32'
+require 'user_agent_parser'
 
 use Rack::MethodOverride
 
@@ -203,6 +205,8 @@ get '/account/new' do
 end
 
 post '/account/new' do
+  @user_info = SessionManager.login(session)
+  logged_in = !@user_info.nil?
   if params[:password] != params[:password_confirm] || params[:password].length <= 0
     redirect '/account/new?check_password=true'
   end
@@ -210,7 +214,7 @@ post '/account/new' do
   # 実在するアカウントがないかを確認する
   credential = Credential.where(type: 'email', uid: params[:email]).where.not(user_id: nil)
   puts credential.length
-  redirect '/account/new?account_exists=true' if credential.length > 0
+  redirect "#{logged_in ? '/settings/login-method/add' : '/account/new'}?account_exists=true" if credential.length > 0
 
   credentials = Credential.where(type: 'email', uid: params[:email]).where.not(tmp_user_id: nil)
   credentials.each do |credential|
@@ -219,11 +223,14 @@ post '/account/new' do
   end
 
   session[:email] = params[:email]
-  tmpUser = SessionManager.newTmpUser
+  tmpUser = SessionManager.newTmpUser(@user_info)
   SessionManager.addEmailCredential(params[:email], params[:password], tmpUser.id)
   puts tmpUser.id
-  $goMailer.sendGmail($goMailerCredential, params[:email], 'Kicha: さあ，はじめましょう',
-                      "アカウント作成ありがとうございます！\n下記のリンクをクリックし，アカウント作成を完了させましょう\n\nhttp://localhost:4949/account/new/#{tmpUser.id}\n\n※このメールに心当たりない場合は，お手数ですがこのメールを削除してくださいますようお願いいたします．")
+  title = @user_info.nil? ? 'さあ，はじめましょう' : 'おや，またあいましたね'
+  action = @user_info.nil? ? 'アカウントの作成' : 'メールアドレスの認証'
+  thanks_message = @user_info.nil? ? 'アカウント作成ありがとうございます！' : 'おや，またあいましたね！'
+  $goMailer.sendGmail($goMailerCredential, params[:email], "Kicha: #{title}",
+                      "#{thanks_message}\n下記のリンクをクリックし，#{action}を完了させましょう\n\nhttp://localhost:4949/account/new/#{tmpUser.id}\n\n※このメールに心当たりない場合は，お手数ですがこのメールを削除してくださいますようお願いいたします．")
   redirect '/account/new/email-sent'
 end
 
@@ -243,6 +250,7 @@ get '/account/new/:id' do
     @suggestAcountCreation = true
     erb :loginError
   else
+    @add_email = !@tmpuser.user_id.nil?
     erb :newAccountDetails
   end
 end
@@ -252,7 +260,7 @@ post '/account/new/:id' do
   puts tmpuser
   if tmpuser.nil?
     redirect '/account/new/' + params[:id]
-  else
+  elsif tmpuser.user_id.nil?
     errors = []
     errors.push('status_too_long') if params[:status].length > 512
     errors.push('invalid_display_id') if params[:display_id].match(/^[a-zA-Z0-9\-_]{1,18}$/).nil?
@@ -278,15 +286,20 @@ post '/account/new/:id' do
       session[:token] = token
     end
     redirect errors.length <= 0 ? '/' : "/account/new/#{params[:id]}?#{errors.map { |item| "#{item}=true" }.join('&')}"
+  else
+    c = Credential.find_by(tmp_user_id: params[:id])
+    c.user_id = tmpuser.user_id
+    c.save
+    tmpuser.destroy
+    erb :emailVerified
   end
 end
 
-get '/settings/social-account/add' do
+get '/settings/login-method/add' do
   @user_info = SessionManager.login(session)
   redirect '/login' if @user_info.nil?
   erb :addSocialAccount
 end
-
 
 get '/line/login' do
   redirect $l.generate_authorize_uri
@@ -370,26 +383,51 @@ get '/google/callback' do
 end
 
 get '/settings' do
+  @session_id = session[:token]
   @user_info = SessionManager.login(session)
   redirect '/login' if @user_info.nil?
+  @two_fa_set = !Credential.find_by(type: 'two_factor', user_id: @user_info.id).nil?
+  @sessions = Session.where(user_id: @user_info.id).order(last_used_at: 'DESC')
+  @credentials = Credential.where(user_id: @user_info.id).where.not(type: 'two_factor')
   erb :settings
+end
+
+delete '/session' do
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  session = Credential.find_by(id: params[:session_id], user_id: @user_info.id)
+  redirect '/settings?failed=true' if session.nil?
+  credential.destroy
+  redirect '/settings?saved=true'
+end
+
+delete '/credential' do
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  credential = Credential.find_by(id: params[:credential_id], user_id: @user_info.id)
+  credentials = Credential.where(user_id: @user_info.id).where.not(type: 'two_factor')
+  redirect '/settings?failed=true' if credential.nil? || credentials.length <= 1
+  credential.destroy
+  redirect '/settings?saved=true'
 end
 
 get '/settings/2fa' do
   @user_info = SessionManager.login(session)
   redirect '/login' if @user_info.nil?
-  c = Credential.find_by(type: '2fa', user_id: @user_info.id)
-  if !c.nil?
+  credential = Credential.find_by(type: 'two_factor', user_id: @user_info.id)
+  redirect '/settings/2fa/modify' unless credential.nil?
+  if !credential.nil?
     token = c.token
   else
-    secret_key = 'AOHT4WFMAL'
-    tfa = TwoFactorAuth.new(secret_key)
+    @secret_key = Base32.encode([*'A'..'Z', *0..9].sample(10).join)
+    puts 'test: ' + @secret_key
+    tfa = TwoFactorAuth.new(@secret_key)
     token = tfa.TOTP
     puts 'aa'
     puts token
   end
   service_name = 'Kicha'
-  qr = RQRCode::QRCode.new("otpauth://totp/#{service_name}:contact.bonychops@gmail.com?secret=#{secret_key}&issuer=#{service_name}")
+  qr = RQRCode::QRCode.new("otpauth://totp/#{service_name}:contact.bonychops@gmail.com?secret=#{@secret_key}&issuer=#{service_name}")
   @svg = qr.as_svg(
     color: '000',
     shape_rendering: 'crispEdges',
@@ -399,16 +437,38 @@ get '/settings/2fa' do
   erb :start2fa
 end
 
+delete '/settings/2fa' do
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  credentials = Credential.where(type: 'two_factor', user_id: @user_info.id)
+  redirect '/settings/2fa' if credentials.length <= 0
+  credentials.each { |c| c.destroy }
+  redirect '/settings/2fa?deleted=true'
+end
+
 post '/settings/2fa' do
-  secret_key = 'AOHT4WFMAL' # [*'A'..'Z', *'a'..'z', *0..9].shuffle[0..9].join
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  credential = Credential.find_by(type: 'two_factor', user_id: @user_info.id)
+  redirect '/settings/2fa/modify' unless credential.nil?
+  secret_key = params[:sec_key] # [*'A'..'Z', *'a'..'z', *0..9].shuffle[0..9].join
   tfa = TwoFactorAuth.new(secret_key)
   token = tfa.TOTP
   puts 'confirm----------------'
   puts token.to_s
   puts params[:confirm_num]
   if token.to_s == params[:confirm_num]
-    redirect '/settings/2fa?success=true'
+    SessionManager.add_2fa_credential(secret_key, @user_info.id)
+    redirect '/settings?saved=true'
   else
     redirect '/settings/2fa?failed=true'
   end
+end
+
+get '/settings/2fa/modify' do
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  credential = Credential.find_by(type: 'two_factor', user_id: @user_info.id)
+  redirect '/settings/2fa' if credential.nil?
+  erb :reset2fa
 end

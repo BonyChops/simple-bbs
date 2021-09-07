@@ -9,7 +9,10 @@ CREATE TABLE users (
 
 CREATE TABLE tmp_users (
  id CHAR(64) NOT NULL PRIMARY KEY,
- expired_at TIMESTAMP(10) NOT NULL
+ expired_at TIMESTAMP(10) NOT NULL,
+ user_id CHAR(10),
+
+ FOREIGN KEY (user_id) REFERENCES users (id)
 );
 
 

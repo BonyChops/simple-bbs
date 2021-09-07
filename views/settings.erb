@@ -13,6 +13,7 @@
             <% if params[:id_already_exists] === "true" then %><p style="color: red;">そのIDはすでに存在しています</p><% end %>
             <% if params[:display_name_too_long] === "true" then %><p style="color: red;">表示名が長すぎます</p><% end %>
             <% if params[:icon_missmatch] === "true" then %><p style="color: red;">アイコンのURIが一致しません(変なリクエストはやめましょう)</p><% end %>
+            <% if params[:already_used_method] === "true" then %><p style="color: red;">そのソーシャルアカウントは別のKichaアカウントに紐付けられています</p><% end %>
             <% if params[:saved] === "true" then %><p style="color: green;">変更を反映しました</p><% end %>
          </div>
          <div style="width: 300px; text-align: left; margin-left: auto; margin-right: auto;">
@@ -55,7 +56,7 @@
         <div style="margin-bottom: 50px; margin-top: 50px;">
             <h3>二段階認証</h3>
             <a href="/settings/2fa"><div class="social-box noselect">
-           <span style="margin-top: auto; margin-bottom: auto;" class="noselect">二段階認証を設定</span>
+           <span style="margin-top: auto; margin-bottom: auto;" class="noselect"><%= @two_fa_set ? "二段階認証の変更" : "二段階認証を設定" %></span>
         </div></a>
         <div style="margin-top: 50px">
             <form action="/logout" method="GET">
@@ -63,5 +64,50 @@
             </form>
         </div>
         </div>
+    </div>
+    <div class="login-box">
+        <div style="margin-bottom: 50px;">
+            <h2>セッション管理</h2>
+        </div>
+        <p>見に覚えのないセッションは無効化して下さい</p>
+        <table style="margin-left: auto; margin-right: auto;">
+            <% @sessions.each do |session|
+            useragent = UserAgentParser.parse(session.useragent)
+            %>
+            <tr>
+            <form action="/session" method="post">
+            <td><%= TimeControl.familiar_string(session.last_used_at) %></td>
+            <td><%= useragent.os.to_s %>: <%= useragent.device.family %>(<%= useragent.family %>)</td>
+            <td><%= session.ip %></td>
+            <input type="hidden" name="session_id" value="<%= session.id %>">
+            <input type="hidden" name="_method" value="delete">
+            <%unless session.token == @session_id %><td><input class="submit-box" style="background: red;" type="submit" value="ログアウト"></td><% end %>
+            </form>
+            </tr>
+            <% end %>
+        </table>
+    </div>
+        <div class="login-box">
+        <div style="margin-bottom: 50px;">
+            <h2>ログイン方法</h2>
+        </div>
+        <p>アカウントに連携されているログイン方法です</p>
+        <table style="margin-left: auto; margin-right: auto;">
+            <% @credentials.each do |credential|
+            %>
+            <tr>
+            <form action="/credential" method="post">
+            <td><%= credential.type %></td>
+            <td><%= credential.display_name.nil? ? credential.uid : credential.display_name %></td>
+            <input type="hidden" name="credential_id" value="<%= credential.id %>">
+            <input type="hidden" name="_method" value="delete">
+            <%if @credentials.length > 1 %><td><input class="submit-box" style="background: red;" type="submit" value="無効化"></td><%end%>
+            </form>
+            </tr>
+            <% end %>
+        </table><br>
+        <form action="/settings/login-method/add">
+            <input class="submit-box" style="padding-left: 25px; padding-right: 25px;" type="submit" value="方法を追加する">
+        </form>
     </div>
 </div>

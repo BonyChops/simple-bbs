@@ -8,16 +8,19 @@ class SessionManager
 
     session = Session.find_by(token: token)
     return nil if session.nil?
+    session.last_used_at = Time.now
+    session.save
 
     User.find(session.user_id)
   end
 
-  def self.newTmpUser
+  def self.newTmpUser(user_info)
     tmpUser = TmpUser.new
     tmpUser.id = [*'A'..'Z', *'a'..'z', *0..9].sample(64).join
     t = Time.now
-    expiredAt =  t + (60 * 10)
+    expiredAt = t + (60 * 10)
     tmpUser.expired_at = expiredAt.utc.to_s
+    tmpUser.user_id = user_info.id unless user_info.nil?
     tmpUser.save
     tmpUser # 消してはいけない
   end
@@ -32,6 +35,17 @@ class SessionManager
     c.tmp_user_id = tmp_user_id unless tmp_user_id.nil?
     c.user_id = user_id unless user_id.nil?
     c.token = Digest::MD5.hexdigest(c.salt + password)
+    c.save
+  end
+
+  def self.add_2fa_credential(token, user_id)
+    c = Credential.new
+    c.id = [*'A'..'Z', *'a'..'z', *0..9].sample(10).join
+    c.token = token
+    c.type = 'two_factor'
+    puts user_id
+    c.uid = User.find_by(id: user_id).display_id
+    c.user_id = user_id
     c.save
   end
 
@@ -88,32 +102,46 @@ class SessionManager
     c
   end
 
-  def self.socialLogin(type, uid, display_name = nil, icon_uri = nil, ip = nil, useragent = nil)
+  def self.socialLogin(session, type, uid, display_name = nil, icon_uri = nil, ip = nil, useragent = nil)
+    user_info = self.login(session)
     c = Credential.find_by(type: type, uid: uid, tmp_user_id: nil)
-    if c.nil?
-      # アカウント作成
-      cs = Credential.where(type: type, uid: uid, user_id: nil)
-      cs.each do |c|
-        c.destroy
+    if user_info.nil?
+      if c.nil?
+        # アカウント作成
+        cs = Credential.where(type: type, uid: uid, user_id: nil)
+        cs.each do |c|
+          c.destroy
+        end
+        tmpUser = newTmpUser
+        newSocialCredential(type, uid, display_name, icon_uri, nil, tmpUser.id)
+        { status: 'account_creation', tmpUser: tmpUser }
+      else
+        # ログイン
+        token = admin_start(c.user_id, ip, useragent)
+        { status: 'logged_in', token: token }
       end
-      tmpUser = self.newTmpUser
-      newSocialCredential(type, uid, display_name, icon_uri, nil, tmpUser.id)
-      { status: 'account_creation', tmpUser: tmpUser }
     else
-      # ログイン
-      token = admin_start(c.user_id, ip, useragent)
-      { status: 'logged_in', token: token }
+      if c.nil?
+        newSocialCredential(type, uid, display_name, icon_uri, user_info.id, nil)
+        { status: 'method_added' }
+      else
+        { status: 'already_used_method' }
+      end
     end
   end
 
   def self.socialLoginRedirectTo(session, type, uid, display_name = nil, icon_uri = nil, ip = nil, useragent = nil)
-    result = socialLogin(type, uid, display_name, icon_uri, ip, useragent)
+    result = socialLogin(session, type, uid, display_name, icon_uri, ip, useragent)
     case result[:status]
     when 'account_creation'
       '/account/new/' + result[:tmpUser].id + '?suggest_name=' + NetHttp.escape(display_name)
     when 'logged_in'
       session[:token] = result[:token]
       '/'
+    when 'method_added'
+      '/settings?saved=true'
+    when 'already_used_method'
+      '/settings?already_used_method=true'
     end
   end
 end
@@ -172,18 +200,18 @@ class TimeControl
   def self.familiar_string(to, from = Time.now, formatted = false)
     return "#{to.year}/#{to.month}/#{to.day} #{to.hour}:#{to.min}:#{to.sec}" if formatted
 
-    str = case
-      when from - to < 60
-        "#{(from - to).to_i}秒前"
-      when from - to < 3600
-        "#{((from - to) / 60).floor}分前"
-      when from - to < (3600 * 24)
-        "#{((from - to) / (3600)).floor}時間前"
-      when from - to < (3600 * 24 * 7)
-        "#{((from - to) / (3600 * 24)).floor}日前"
-      else
-        "#{to.year}/#{to.month}/#{to.day}"
-      end
-    return str
+    if from - to < 1
+      '今'
+    elsif from - to < 60
+      "#{(from - to).to_i}秒前"
+    elsif from - to < 3600
+      "#{((from - to) / 60).floor}分前"
+    elsif from - to < (3600 * 24)
+      "#{((from - to) / 3600).floor}時間前"
+    elsif from - to < (3600 * 24 * 7)
+      "#{((from - to) / (3600 * 24)).floor}日前"
+    else
+      "#{to.year}/#{to.month}/#{to.day}"
+    end
   end
 end
