@@ -197,6 +197,23 @@ put '/account' do
   redirect "/settings?#{errors.length <= 0 ? 'saved=true' : errors.map { |item| "#{item}=true" }.join('&')}"
 end
 
+delete '/account' do
+  u = SessionManager.login(session)
+  redirect '/login' if u.nil?
+  u.destroy
+  redirect '/goodbye'
+end
+
+get '/account/delete' do
+  u = SessionManager.login(session)
+  redirect '/login' if u.nil?
+  erb :deleteAccount
+end
+
+get '/goodbye' do
+  erb :goodbye
+end
+
 get '/account/new' do
   @user_info = SessionManager.login(session)
   redirect '/?loged_in=true' unless @user_info.nil?
