@@ -14,7 +14,7 @@ class SessionManager
     User.find(session.user_id)
   end
 
-  def self.newTmpUser(user_info)
+  def self.newTmpUser(user_info = nil)
     tmpUser = TmpUser.new
     tmpUser.id = [*'A'..'Z', *'a'..'z', *0..9].sample(64).join
     t = Time.now
