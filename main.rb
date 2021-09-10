@@ -22,27 +22,36 @@ ActiveRecord::Base.configurations = YAML.load_file('database.yml')
 ActiveRecord::Base.establish_connection :development
 
 class User < ActiveRecord::Base
+  has_many :tmp_users, foreign_key: 'user_id', dependent: :destroy
+  has_many :sessions, foreign_key: 'user_id', dependent: :destroy
+  has_many :credentials, foreign_key: 'user_id', dependent: :destroy
+  has_many :posts, foreign_key: 'user_id', dependent: :destroy
+  has_many :hearts, foreign_key: 'user_id', dependent: :destroy
 end
 
 class Credential < ActiveRecord::Base
   self.inheritance_column = :_type_disabled
-  belongs_to :TmpUser
+  belongs_to :tmp_users
+  belongs_to :users
 end
 
 class Post < ActiveRecord::Base
+  has_many :hearts, foreign_key: 'post_id', dependent: :destroy
+  belongs_to :users
 end
 
 class Heart < ActiveRecord::Base
-end
-
-class Setting < ActiveRecord::Base
+  belongs_to :posts
+  belongs_to :users
 end
 
 class TmpUser < ActiveRecord::Base
-  has_many :credentials, dependent: :nullify
+  has_many :credentials, foreign_key: 'tmp_user_id', dependent: :nullify
+  belongs_to :users
 end
 
 class Session < ActiveRecord::Base
+  belongs_to :users
 end
 
 set :sessions,
@@ -67,6 +76,11 @@ end
 if File.exist?('credential/discord.yml')
   @credential = YAML.load_file('credential/discord.yml')
   $d = Discord.new(@credential['client_id'], @credential['secret'], $redirect_uri)
+end
+
+if File.exist?('credential/github.yml')
+  @credential = YAML.load_file('credential/github.yml')
+  $g = Github.new(@credential['client_id'], @credential['secret'], $redirect_uri)
 end
 
 if File.exist?('credential/google.json')
@@ -371,6 +385,22 @@ get '/discord/callback' do
                                                   $d.get_avatar_uri(@user_info['id'], @user_info['avatar']), request.ip, request.env['HTTP_USER_AGENT'])
   else
     redirect '/'
+  end
+end
+
+get '/github/login' do
+  redirect $g.generate_authorize_uri
+end
+
+get '/github/callback' do
+  puts params[:code]
+  @result = $g.get_accesstoken(params[:code])
+  @user_info = $g.get_user_info(@result['access_token'])
+  if @user_info != false
+    redirect SessionManager.socialLoginRedirectTo(session, 'github', @user_info['id'], @user_info['login'],
+                                                  @user_info['avatar_url'], request.ip, request.env['HTTP_USER_AGENT'])
+  else
+    redirect '/?error'
   end
 end
 
