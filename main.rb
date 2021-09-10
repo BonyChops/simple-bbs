@@ -415,8 +415,6 @@ end
 
 get '/google/callback' do
   puts params[:code]
-  $go.generate_authorize_uri(['https://mail.google.com/', 'https://www.googleapis.com/auth/gmail.modify',
-                              'https://www.googleapis.com/auth/gmail.compose', 'https://www.googleapis.com/auth/gmail.send'])
   @result = $go.get_accesstoken(params[:code])
   puts @result
   @user_info = $go.get_user_info(@result['access_token'])

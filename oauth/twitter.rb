@@ -54,7 +54,7 @@ class Twitter
                 "oauth_token" => oauth_token,
                 "redirect_uri" => @redirect_uri
             }
-            return "https://api.twitter.com/oauth/authorize?" + NetHttp.objectToString(options);
+            return "https://api.twitter.com/oauth/authenticate?" + NetHttp.objectToString(options);
         end
 
     end
