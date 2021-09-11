@@ -162,7 +162,7 @@ get '/user/:id' do
   @user_info = SessionManager.login(session)
   @target_user = User.find_by(display_id: params[:id])
   @disable_post_box = true
-  @posts = Post.where(user_id: @target_user.id) unless @target_user.nil?
+  @posts = Post.where(user_id: @target_user.id, reply_to: nil) unless @target_user.nil?
   puts @user_info
   puts @user_info.nil?
   erb :index

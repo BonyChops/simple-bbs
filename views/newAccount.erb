@@ -11,9 +11,10 @@
                 <h2>🎉アカウント作成</h2>
                 <% if @incorrectPassword==="true" then %>
                     <p style="color: red;">パスワードを確認してください</p>
-                <% end %>
-                <% if params[:account_exists]==="true" then %>
+                <% elsif params[:account_exists]==="true" then %>
                     <p style="color: red;">このアカウントはすでに存在しています</p>
+                <% elsif User.all.length > 1 %>
+                    <p style="color: white;"><%= User.all.length %>人のユーザーが利用中！</p>
                 <% end %>
             </div>
             <div style="margin-left: 25px;margin-right: 25px; margin-bottom: 50px; text-align: left;">

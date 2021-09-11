@@ -198,7 +198,8 @@ end
 
 class TimeControl
   def self.familiar_string(to, from = Time.now, formatted = false)
-    return "#{to.year}/#{to.month}/#{to.day} #{to.hour}:#{to.min}:#{to.sec}" if formatted
+    local = to.getlocal('+09:00')
+    return "#{local.year}/#{local.month}/#{local.day} #{local.hour}:#{local.min}:#{local.sec}" if formatted
 
     if from - to < 1
       '今'

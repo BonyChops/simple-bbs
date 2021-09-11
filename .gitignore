@@ -1,6 +1,6 @@
 credential/
 *.db
-
+tmp.rb
 
 *.gem
 *.rbc
