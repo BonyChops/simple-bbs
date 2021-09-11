@@ -72,6 +72,7 @@ CREATE TABLE sessions (
  ip CHAR(20),
  useragent VARCHAR(128),
  user_id CHAR(10),
+ is_valid BIT(1) NOT NULL,
 
  FOREIGN KEY (user_id) REFERENCES users (id)
 );

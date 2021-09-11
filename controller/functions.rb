@@ -2,16 +2,40 @@ require 'base32'
 require './oauth/http'
 
 class SessionManager
-  def self.login(session)
+  def self.login(session, force_valid = false)
+    token = session[:token]
+    return token if token.nil?
+
+    session = Session.find_by(token: token)
+    puts session
+    return nil if session.nil? || !(!session.is_valid.zero? || force_valid)
+
+    session.last_used_at = Time.now
+    session.save
+
+    User.find(session.user_id)
+  end
+
+  def self.is_valid_session?(session)
     token = session[:token]
     return token if token.nil?
 
     session = Session.find_by(token: token)
     return nil if session.nil?
-    session.last_used_at = Time.now
-    session.save
 
-    User.find(session.user_id)
+    session.is_valid == 1
+  end
+
+  def self.to_valid(session)
+    token = session[:token]
+    return token if token.nil?
+
+    session = Session.find_by(token: token)
+    puts session
+    return nil if session.nil?
+
+    session.is_valid = 1
+    session.save
   end
 
   def self.newTmpUser(user_info = nil)
@@ -75,7 +99,7 @@ class SessionManager
     true
   end
 
-  def self.admin_start(user_id, ip = nil, useragent = nil)
+  def self.admin_start(user_id, ip = nil, useragent = nil, force_valid = false)
     s = Session.new
     s.id = [*'A'..'Z', *'a'..'z', *0..9].sample(10).join
     s.token = [*'A'..'Z', *'a'..'z', *0..63].sample(10).join
@@ -85,6 +109,7 @@ class SessionManager
     s.ip = ip
     s.useragent = useragent
     s.user_id = user_id
+    s.is_valid = (Credential.find_by(user_id: user_id, type: 'two_factor').nil? || force_valid) ? 1 : 0
     s.save
     s.token
   end
@@ -117,7 +142,7 @@ class SessionManager
         { status: 'account_creation', tmpUser: tmpUser }
       else
         # ログイン
-        token = admin_start(c.user_id, ip, useragent)
+        token = admin_start(c.user_id, ip, useragent, true)
         { status: 'logged_in', token: token }
       end
     else

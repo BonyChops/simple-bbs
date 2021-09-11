@@ -170,16 +170,40 @@ end
 
 get '/login' do
   @user_info = SessionManager.login(session)
+  @is_valid_session = SessionManager.is_valid_session?(session)
   redirect '/?loged_in=true' unless @user_info.nil?
+  redirect '/login/twofactor' if @is_valid_session == false
   @incorrectFlag = params[:incorrect]
   erb :login
+end
+
+get '/login/twofactor' do
+  @user_info = SessionManager.login(session)
+  @is_valid_session = SessionManager.is_valid_session?(session)
+  redirect '/?loged_in=true' unless @user_info.nil?
+  redirect '/?logged_in=true' if @is_valid_session == true
+  erb :challenge2fa
+end
+
+post '/login/twofactor' do
+  @user_info = SessionManager.login(session, true)
+  credential = Credential.find_by(user_id: @user_info.id, type: 'two_factor')
+  tfa = TwoFactorAuth.new(credential.token)
+  token = tfa.TOTP
+  if token.to_s == params[:confirm_num]
+    SessionManager.to_valid(session)
+    redirect '/?logged_in=true'
+  else
+    redirect '/login/twofactor?failed=true'
+  end
 end
 
 post '/login' do
   token = SessionManager.email(params[:email], params[:password], request.ip, request.env['HTTP_USER_AGENT'])
   redirect '/login?incorrect=true' if token.nil?
   session[:token] = token
-  redirect '/?logged_in'
+  redirect '/login/twofactor' if Session.find_by(token: token).is_valid.zero?
+  redirect '/?logged_in=true'
 end
 
 get '/logout' do
@@ -229,7 +253,7 @@ get '/goodbye' do
 end
 
 get '/account/new' do
-  @user_info = SessionManager.login(session)
+  @user_info = SessionManager.login(session, true)
   redirect '/?loged_in=true' unless @user_info.nil?
   @incorrectPassword = params[:check_password]
   erb :newAccount
@@ -440,9 +464,12 @@ end
 delete '/session' do
   @user_info = SessionManager.login(session)
   redirect '/login' if @user_info.nil?
-  session = Credential.find_by(id: params[:session_id], user_id: @user_info.id)
-  redirect '/settings?failed=true' if session.nil?
-  credential.destroy
+  puts params[:session_id]
+  puts @user_info.id
+  target_session = Session.find_by(id: params[:session_id], user_id: @user_info.id)
+  puts target_session
+  redirect '/settings?failed=true' if target_session.nil?
+  target_session.destroy
   redirect '/settings?saved=true'
 end
 
@@ -472,7 +499,7 @@ get '/settings/2fa' do
     puts token
   end
   service_name = 'Kicha'
-  qr = RQRCode::QRCode.new("otpauth://totp/#{service_name}:contact.bonychops@gmail.com?secret=#{@secret_key}&issuer=#{service_name}")
+  qr = RQRCode::QRCode.new("otpauth://totp/#{service_name}:#{@user_info.display_id}?secret=#{@secret_key}&issuer=#{service_name}")
   @svg = qr.as_svg(
     color: '000',
     shape_rendering: 'crispEdges',

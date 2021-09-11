@@ -15,6 +15,7 @@
             <% if params[:icon_missmatch] === "true" then %><p style="color: red;">アイコンのURIが一致しません(変なリクエストはやめましょう)</p><% end %>
             <% if params[:already_used_method] === "true" then %><p style="color: red;">そのソーシャルアカウントは別のKichaアカウントに紐付けられています</p><% end %>
             <% if params[:saved] === "true" then %><p style="color: green;">変更を反映しました</p><% end %>
+            <% if params[:failed] === "true" then %><p style="color: red;">反映に失敗しました</p><% end %>
          </div>
          <div style="width: 300px; text-align: left; margin-left: auto; margin-right: auto;">
             <p><a href="/">&lt; 戻る</a></p>
@@ -55,6 +56,7 @@
         </form>
         <div style="margin-bottom: 50px; margin-top: 50px;">
             <h3>二段階認証</h3>
+            <p>メールアドレスログイン時のセキュリティを高めます</p>
             <a href="/settings/2fa"><div class="social-box noselect">
            <span style="margin-top: auto; margin-bottom: auto;" class="noselect"><%= @two_fa_set ? "二段階認証の変更" : "二段階認証を設定" %></span>
         </div></a>
