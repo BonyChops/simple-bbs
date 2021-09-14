@@ -57,6 +57,8 @@ end
 set :sessions,
     secret: 'xxx'
 
+$view_maximum = 3
+
 if File.exist?('credential/general.yml')
   credential = YAML.load_file('credential/general.yml')
   $redirect_uri = credential['redirect_uri']
@@ -96,7 +98,7 @@ $goMailerCredential = GoogleCredential.new(@credential, $goMailer)
 
 post '/api/post/:id/like/toggle' do
   @user_info = SessionManager.login(session)
-  l = Heart.find_by(user_id: @user_info.id)
+  l = Heart.find_by(user_id: @user_info.id, post_id: params[:id])
   if l.nil?
     l = Heart.new
     l.user_id = @user_info.id
@@ -110,13 +112,25 @@ post '/api/post/:id/like/toggle' do
     pressed = false
   end
 
-  obj = { status: 'success', pressed: pressed }
+  obj = { status: 'success', pressed: pressed, num: Heart.where(post_id: params[:id]).length }
   erb obj.to_json, layout: false
 end
 
 get '/' do
+  redirect '/' if !params[:since].nil? && !params[:from].nil?
   @user_info = SessionManager.login(session)
-  @posts = Post.where(reply_to: nil).order(posted_at: 'desc')
+  @posts = if !params[:since].nil?
+    Post.where(reply_to: nil).where('posted_at < ?', Time.parse(params[:since])).order(posted_at: 'desc').limit($view_maximum)
+  elsif !params[:from].nil?
+    @rev_order = true
+    Post.where(reply_to: nil).where('posted_at > ?', Time.parse(params[:from])).order(posted_at: 'desc').last($view_maximum)
+  else
+    Post.where(reply_to: nil).order(posted_at: 'desc').limit($view_maximum)
+  end
+  unless @posts.length.zero?
+    @next_button = @posts[0].id != Post.where(reply_to: nil).order(posted_at: 'desc').limit(1)[0].id
+    @prev_button = @posts.last(1)[0].id != Post.where(reply_to: nil).order(posted_at: 'desc').last(1)[0].id
+  end
   puts @user_info
   puts @user_info.nil?
   erb :index
@@ -126,6 +140,15 @@ get '/post/new' do
   @user_info = SessionManager.login(session)
   redirect '/login' if @user_info.nil?
   erb :newPost
+end
+
+delete '/post' do
+  @user_info = SessionManager.login(session)
+  redirect '/login' if @user_info.nil?
+  post = Post.find_by(id: params[:id].to_i)
+  redirect "/?failed=true" if post.nil? || post.user_id != @user_info.id
+  post.destroy
+  redirect '/'
 end
 
 post '/post/new' do

@@ -224,7 +224,7 @@ end
 class TimeControl
   def self.familiar_string(to, from = Time.now, formatted = false)
     local = to.getlocal('+09:00')
-    return "#{local.year}/#{local.month}/#{local.day} #{local.hour}:#{local.min}:#{local.sec}" if formatted
+    return local.strftime("%Y/%m/%d %H:%M:%S") if formatted
 
     if from - to < 1
       '今'
@@ -239,5 +239,11 @@ class TimeControl
     else
       "#{to.year}/#{to.month}/#{to.day}"
     end
+  end
+end
+
+class Sanitizing
+  def self.do(str)
+    return str.to_s.gsub(/</, '&lt;').gsub(/>/, '&gt;')
   end
 end

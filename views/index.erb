@@ -34,9 +34,9 @@
                                 </div></a><%end%>
                             </div>
                             <div style="position: relative;">
-                                <span style="font-size: 22px;"><%= @target_user.display_name %></span><br>
-                                <span style="font-size: 18px; color: gray">@<%= @target_user.display_id %></span>
-                                <p><%= @target_user.status %></p>
+                                <span style="font-size: 22px;"><%=Sanitizing.do( @target_user.display_name )%></span><br>
+                                <span style="font-size: 18px; color: gray">@<%=Sanitizing.do( @target_user.display_id )%></span>
+                                <p><%=Sanitizing.do( @target_user.status )%></p>
                             </div>
                         </div>
                     </div>
@@ -47,38 +47,44 @@
         <%
         unless @target_post.nil?
             user = User.find(@target_post.user_id)
+            heart_num = Heart.where(post_id: @target_post.id).length
+
         %>
         <div class="tweet-box">
             <div class="tweet-container" style="margin-bottom: 5px;">
                 <div class="tweet-author">
                     <div class="tweet-icon">
-                        <img class="tweet-icon" src="<%= user.icon_uri %>" width="100%">
+                        <img class="tweet-icon" src="<%=Sanitizing.do( user.icon_uri )%>" width="100%">
                     </div>
                      <div class="tweet-header-top">
-                        <a href="/user/<%= user.display_id %>" style="color: white;">
-                            <%= user.display_name %>
+                        <a href="/user/<%=Sanitizing.do( user.display_id )%>" style="color: white;">
+                            <%=Sanitizing.do( user.display_name )%>
                         </a><br>
-                        <span style="color: gray; margin-top: 10px;">@<%= user.display_id %> ・ <%= TimeControl.familiar_string(@target_post.posted_at, Time.now, true) %></span>
+                        <span style="color: gray; margin-top: 10px;">@<%=Sanitizing.do( user.display_id )%> ・ <%=Sanitizing.do( TimeControl.familiar_string(@target_post.posted_at, Time.now, true) )%></span>
                     </div>
                 </div>
             </div>
             <div class="tweet-main" style="margin-bottom: 10px;">
-                <div class="tweet-context" style="font-size: 24px;"><%= @target_post.content %></div>
+                <div class="tweet-context" style="font-size: 24px;"><%=Sanitizing.do( @target_post.content )%></div>
             </div>
             <div class="tweet-footer">
-                <div class="tweet-button noselect" onClick="toggleLike(<%=@target_post.id%>)">
-                    <i class="material-icons">favorite_border</i>
+                <div class="tweet-button noselect" onClick="toggleLike(&quot;<%=Sanitizing.do(@user_info.nil? ? "require:login" : @target_post.id )%>&quot;)">
+                    <i class="material-icons heart_style_<%=Sanitizing.do( @target_post.id )%>" style="color: <%= @user_info.nil? || Heart.find_by(post_id: @target_post.id, user_id: @user_info.id).nil? ? 'white' : 'red' %>;" ><%= @user_info.nil? || Heart.find_by(post_id: @target_post.id, user_id: @user_info.id).nil? ? 'favorite_border' : 'favorite' %></i><span class="heart_num_<%=Sanitizing.do( @target_post.id )%>"><%= heart_num if heart_num > 0 %></span>
                 </div>
-                <div class="tweet-button">
-                    <i class="material-icons">share</i>
-                </div>
+                <%if !@user_info.nil? && @user_info.id == @target_post.user_id %><form action="/post" method="post">
+                    <input name="id" type="hidden" value="<%=Sanitizing.do( @target_post.id )%>">
+                    <input name="_method" type="hidden" value="delete">
+                    <button type="submit">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </form><% end %>
             </div>
         </div>
         <% end %>
         <% if !@disable_post_box %>
         <div class="tweet-box">
         <form method="POST" action="/post/new">
-            <%if @target_post != nil%>  <input type="hidden" name="reply_to" value="<%= @target_post.id %>"><%end%>
+            <%if @target_post != nil%>  <input type="hidden" name="reply_to" value="<%=Sanitizing.do( @target_post.id )%>"><%end%>
             <div class="tweet-container">
                 <div class="tweet-icon">
                     <img class="tweet-icon" src="<%= if @user_info.nil? then "/images/icon.png" else @user_info.icon_uri end %>" width="100%">
@@ -86,7 +92,7 @@
                 <div class="tweet-main">
                     <div class="tweet-header">
                         <a href="https://github.com/BonyChops" style="color: white;">
-                        <%= if @user_info == nil then "Kicha" else @user_info.display_name end%>
+                        <%=Sanitizing.do( if @user_info == nil then "Kicha" else @user_info.display_name end)%>
                         </a>
                         <span style="color: gray; margin-left: 5px;">@<%= if @user_info == nil then "kicha" else @user_info.display_id end%></span>
                     </div>
@@ -101,40 +107,55 @@
         </form>
         </div>
         <% end %>
+        <% if @next_button %>
+        <div class="tweet-box">
+        <a href="./<%=@set_current.nil? ? '' : @set_current%>?from=<%= @posts[0].posted_at %>"><p style="text-align: center; ">前の投稿を見る</p>
+        </div></a>
+        <% end %>
     　  <% if @posts.length <= 0 %>
         <p style="text-align: center; color: gray; margin-top: 50px;">投稿はまだありません</p>
         <% else
         @posts.each do |post|
         user = User.find(post.user_id)
-        replyNum = Post.where(reply_to: post.id).length
+        reply_num = Post.where(reply_to: post.id).length
+        heart_num = Heart.where(post_id: post.id).length
         %>
         <div class="tweet-box">
             <div class="tweet-container">
                 <div class="tweet-icon">
-                    <img class="tweet-icon" src="<%= user.icon_uri %>" width="100%">
+                    <img class="tweet-icon" src="<%=Sanitizing.do( user.icon_uri )%>" width="100%">
                 </div>
                 <div class="tweet-main">
                     <div class="tweet-header">
-                        <a href="/user/<%= user.display_id %>" style="color: white;">
-                        <%= user.display_name %>
+                        <a href="/user/<%=Sanitizing.do( user.display_id )%>" style="color: white;">
+                        <%=Sanitizing.do( user.display_name )%>
                         </a>
-                        <span style="color: gray; margin-left: 5px;">@<%= user.display_id %> ・ <%= TimeControl.familiar_string(post.posted_at) %></span>
+                        <span style="color: gray; margin-left: 5px;">@<%=Sanitizing.do( user.display_id )%> ・ <%=Sanitizing.do( TimeControl.familiar_string(post.posted_at) )%></span>
                     </div>
-                    <div class="tweet-context"><%= post.content %></div>
+                    <div class="tweet-context"><%=Sanitizing.do( post.content )%></div>
                 </div>
             </div>
             <div class="tweet-footer">
                 <div class="tweet-button">
-                    <a href="/post/<%= post.id %>" style="text-decoration: none; color: white;"><i class="material-icons">chat_bubble_outline</i> <%= if replyNum > 0 then replyNum else "" end %></a>
+                    <a href="/post/<%=Sanitizing.do( post.id )%>" style="text-decoration: none; color: white;"><i class="material-icons">chat_bubble_outline</i> <%= if reply_num > 0 then reply_num else "" end %></a>
                 </div>
-                <div class="tweet-button noselect">
-                    <i class="material-icons">favorite_border</i>
+                <div class="tweet-button noselect" onClick="toggleLike(&quot;<%=@user_info.nil? ? "require:login" : post.id %>&quot;)">
+                    <i class="material-icons heart_style_<%=Sanitizing.do( post.id )%>" style="color: <%= @user_info.nil? || Heart.find_by(post_id: post.id, user_id: @user_info.id).nil? ? 'white' : 'red' %>;" ><%= @user_info.nil? || Heart.find_by(post_id: post.id, user_id: @user_info.id).nil? ? 'favorite_border' : 'favorite' %></i><span class="heart_num_<%=Sanitizing.do( post.id )%>"><%= heart_num if heart_num > 0 %></span>
                 </div>
-                <div class="tweet-button">
-                    <i class="material-icons">share</i>
-                </div>
+                <%if !@user_info.nil? && @user_info.id == post.user_id %><form action="/post" method="post">
+                    <input name="id" type="hidden" value="<%=Sanitizing.do( post.id )%>">
+                    <input name="_method" type="hidden" value="delete">
+                    <button type="submit">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </form><% end %>
             </div>
         </div>
     　  <% end end %>
+        <% if @prev_button %>
+        <div class="tweet-box">
+        <a href="./<%=Sanitizing.do(@set_current.nil? ? '' : @set_current)%>?since=<%= @posts.last(1)[0].posted_at %>"><p style="text-align: center; ">前の投稿を見る</p>
+        </div></a>
+        <% end %>
     </div>
 </div>

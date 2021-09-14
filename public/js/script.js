@@ -12,6 +12,10 @@ document.body.onload = () => {
 }
 
 function toggleLike(id) {
+    if(id === "require:login"){
+        window.location.href = '/login';
+        return;
+    }
     console.log(id);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
@@ -31,8 +35,9 @@ function toggleLike(id) {
                 break;
             case 4: // データ受信完了.
                 if (xhr.status == 200 || xhr.status == 304) {
-                    var data = xhr.responseText; // responseXML もあり
-                    console.log('COMPLETE! :' + data);
+                    var data = JSON.parse(xhr.responseText); // responseXML もあり
+                    console.log(data);
+                    change(id, data.pressed, data.num);
                 } else {
                     console.log('Failed. HttpStatus: ' + xhr.statusText);
                 }
@@ -44,4 +49,14 @@ function toggleLike(id) {
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.send('');
     xhr.abort();
+}
+
+function change(id, status, num){
+    var styleEl = document.getElementsByClassName(`heart_style_${id}`);
+    var numEl = document.getElementsByClassName(`heart_num_${id}`);
+    console.log(`heart_num_${id}`)
+    console.log(numEl)
+    styleEl[0].textContent = status ? 'favorite' : 'favorite_border';
+    styleEl[0].style.color = status ? 'red' : 'white';
+    numEl[0].textContent = num > 0 ? num : "";
 }
